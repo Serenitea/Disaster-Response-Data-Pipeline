@@ -1,10 +1,11 @@
 # import packages
 import sys
-
+import pandas as pd
+import numpy as np
 
 def load_data(data_file):
     # read in file
-
+    data = pd.read_csv(data_file)
 
     # clean data
 
