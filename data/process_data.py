@@ -24,27 +24,35 @@ def clean_data(df):
         - category values encoded as boolean integers with one category per column
         - duplicates removed
     '''
-    categories = df.categories.str.split(';', expand = True)
-    row = categories.iloc[0]
+    split_cat = df.split_cat.str.split(';', expand = True)
+    row = split_cat.iloc[0]
     category_colnames = [x[:-2] for x in row]
-    categories.columns = category_colnames
-    for col in categories:
+    split_cat.columns = category_colnames
+    for col in split_cat:
         # set each value to be the last character of the string
-        categories[col] = categories[col].str[-1]
+        split_cat[col] = split_cat[col].str[-1]
 
         # convert column from string to numeric
-        categories[col] = pd.to_numeric(categories[col])
-        
-    #drop the now unnecessary categories col
-    df = df.drop('categories', axis = 1) 
+        split_cat[col] = pd.to_numeric(split_cat[col])
     
-    #concat the new dataframe to original
-    df = pd.concat([df, categories], axis = 1)
+    #drop the completely empty column
+    split_cat = split_cat.drop('child_alone', axis = 1)
     
+    # concatenate the original dataframe with the new `categories` dataframe
+    df_split = pd.concat([df, split_cat], axis = 1)
+
+    # drop the original categories column from `df`
+    df_split = df_split.drop(['categories'], axis = 1)
+    display(df_split)
+
     #drop duplicates
-    df = df.drop_duplicates()
-    return df
+    df_split = df_split.drop_duplicates()
     
+    # Remove rows with a related value of 2 from the dataset
+    df_split = df_split[df_split['related'] != 2]
+    
+    return df_split
+
     
 def save_data(df, database_filename):
     '''
