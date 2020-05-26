@@ -1,56 +1,75 @@
 import json
 import plotly
 import pandas as pd
+import re
+import joblib
 
 from nltk.stem import WordNetLemmatizer
+from nltk.stem.porter import PorterStemmer
 from nltk.tokenize import word_tokenize
-
 from flask import Flask
 from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar
-from sklearn.externals import joblib
+import plotly.express as px
+from plotly.express import bar
+
 from sqlalchemy import create_engine
 
-
+#create app
 app = Flask(__name__)
 
+#create functions
 def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
+    '''
+    Raw text tokenized via the following steps: normalized, punctuation removed, stemmed, and lemmatized
+    '''
+    #Normalize text and remove punctuation
+    normalized_txt = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
+    
+    #tokenize text
+    words = word_tokenize(normalized_txt)
 
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
+    #lemmatize
+    words = [WordNetLemmatizer().lemmatize(w) for w in words]
+    
+    #Reduce words to their stems
+    clean_tokens = [PorterStemmer().stem(w) for w in words]
+    
     return clean_tokens
 
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///../data/disaster_response.db')
+df = pd.read_sql_table(table_name='message_categories', con=engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("../models/model_3.pkl")
 
-
+#colors = ["#4CB391", "azure"]
+#colors = px.colors.sequential.Plasma
+#colors = ['#a3a7e4'] * 100
+colors = px.colors.cyclical.IceFire
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
 def index():
-
+    global colors
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
+    data = df.iloc[:, 4:]
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
 
-    # create visuals
-    # TODO: Below is an example - modify to create your own visuals
+    cat_count = (df.iloc[:, 4:] != 0).sum()
+    cat_names = list(cat_count.index)
+    
+    
     graphs = [
         {
             'data': [
-                Bar(
+                bar(
                     x=genre_names,
-                    y=genre_counts
+                    y=genre_counts,
+                    color=genre_counts
+                    
                 )
             ],
 
@@ -63,8 +82,88 @@ def index():
                     'title': "Genre"
                 }
             }
+        },
+        
+    #top 5 most popular categories
+        {
+            'data': [
+                bar(
+                    x=cat_names,
+                    y=cat_count,
+                    color=cat_count, color_continuous_scale=px.colors.diverging.Tealrose, color_continuous_midpoint=2
+                )
+            ],
+
+            'layout': {
+                'title': 'Counts of All Message Categories',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Categories"
+                }
+            }
         }
+
+        
     ]
+
+    
+    #corr_list = []
+    #for row in data.corr().values:
+    #    corr_list.append(list(row))
+    
+    # create visuals
+    #strength
+    
+    #Default graph: genre distribution graph
+    '''
+    graphs = [
+        {
+            'data': [
+                Bar(
+                    x=genre_names,
+                    y=genre_counts,
+                    marker = dict(color=color)
+                    
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Message Genres',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Genre"
+                }
+            }
+        },
+        
+    #top 5 most popular categories
+        {
+            'data': [
+                Bar(
+                    x=cat_names,
+                    y=cat_count,
+                    marker = dict(color=color)
+                )
+            ],
+
+            'layout': {
+                'title': 'Counts of All Message Categories',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Categories"
+                }
+            }
+        }
+
+        
+    ]
+    '''
 
     # encode plotly graphs in JSON
     ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
@@ -93,7 +192,7 @@ def go():
 
 
 def main():
-    app.run(host='0.0.0.0', port=3001, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=True)
 
 
 if __name__ == '__main__':
