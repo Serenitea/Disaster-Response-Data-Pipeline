@@ -12,7 +12,7 @@ from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar
 import plotly.express as px
 from plotly.express import bar
-
+from plotly.basedatatypes import BaseFigure
 from sqlalchemy import create_engine
 
 #create app
@@ -165,9 +165,12 @@ def index():
     ]
     '''
 
-    # encode plotly graphs in JSON
+    #assign unique id to each graph
     ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
-    graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
+
+    graphJSON = BaseFigure.write_json('graph-1')
+    # encode plotly graphs in JSON
+    #graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
 
     # render web page with plotly graphs
     return render_template('master.html', ids=ids, graphJSON=graphJSON)
