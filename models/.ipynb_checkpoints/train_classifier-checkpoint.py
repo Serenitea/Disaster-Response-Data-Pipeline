@@ -36,7 +36,8 @@ def load_data(database_filepath):
     df = pd.read_sql_table(table_name='message_categories', con=engine)
     X = df['message']
     Y = df.iloc[:,4:]
-    return X, Y
+    category_name = Y.columns.values
+    return X, Y, category_name
 
 
 def tokenize(text):
@@ -65,35 +66,55 @@ def tokenize(text):
     return words
 
 
-def build_model(X, Y, pipeline):
+def build_model(X, Y):
     '''
-    Makes, builds, and fits a model given the X, Y, and a pipeline model.
+    Builds and fits a pipeline model given X and Y.
     '''
-    model = pipeline
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y,random_state = 42)
+    model = Pipeline([
+        ('features', FeatureUnion([
+
+            ('text_pipeline', Pipeline([
+                ('vect', CountVectorizer(tokenizer=tokenize)),
+                ('tfidf', TfidfTransformer())
+            ])),
+        ])),
+
+        ('clf', MultiOutputClassifier(AdaBoostClassifier()))
+    ])
+    
     model.fit(X_train, Y_train)
     return model
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    '''
+    Create a weighted averages summary dataframe for each label, 
+    using the classification_report function 
+    IN: 
+        Y_test - array of actual values
+        y_preds - numpy array of predicted values
+    OUT 
+        Weighted averages summary df with columns: precision, recall, f1-score, support
+        Prints descriptive statistics for the f1-score, upper and lower quantile df slices
+    '''
     #make predictions
     y_preds = model.predict(X_test)
 
+    #make a dictionary of results from classificatoin_report
     results_dict = {}
-
     for pred, label, col in zip(y_preds.transpose(), Y_test.values.transpose(), Y_test.columns):
-        print(col)
-        print(classification_report(label, pred))
         results_dict[col] = classification_report(label, pred, output_dict=True)
-    
-    #return precision, recall, and f1-score of weighted averages
+
+    #extract the "weighted avg" dict of each label in the dict
     weighted_avg = {}
     for key in results_dict.keys():
         weighted_avg[key] = results_dict[key]['weighted avg']
 
-    df_wavg = pd.DataFrame(weighted_avg).transpose()
+    df_wavg = pd.DataFrame(weighted_avg).transpose() #create df from weighted avg dict
     
-    print
+    display(df['f1-score'].describe()) # descriptive stats for f1-scores
+    display('lowest quantile of f scores',df[df['f1-score'] <= df['f1-score'].quantile(0.25)]) # lowest quantile of f scores
+    display('highest quantile of f scores', df[df['f1-score'] >= df['f1-score'].quantile(0.75)]) # highest quantile of f scores
     return df_wavg
 
 
