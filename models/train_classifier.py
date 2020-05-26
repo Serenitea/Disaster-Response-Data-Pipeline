@@ -42,20 +42,13 @@ def load_data(database_filepath):
 
 def tokenize(text):
     '''
-    IN: 
-        raw text for tokenizing via the following steps: 
-            - normalized, punctuation removed, stop words removed, stemmed, and lemmatized
-    OUT:
-        tokenized text
+    Raw text tokenized via the following steps: normalized, punctuation removed, stemmed, and lemmatized
     '''
     #Normalize text and remove punctuation
     normalized_txt = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
     
     #tokenize text
     words = word_tokenize(normalized_txt)
- 
-    #remove stop words
-    #words = [w for w in words if w not in stopwords.words("english")]
 
     #lemmatize
     words = [WordNetLemmatizer().lemmatize(w) for w in words]

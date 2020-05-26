@@ -11,23 +11,31 @@ from plotly.graph_objs import Bar
 from sklearn.externals import joblib
 from sqlalchemy import create_engine
 
-
+#create app
 app = Flask(__name__)
 
+#create functions
 def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
+    '''
+    Raw text tokenized via the following steps: normalized, punctuation removed, stemmed, and lemmatized
+    '''
+    #Normalize text and remove punctuation
+    normalized_txt = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
+    
+    #tokenize text
+    words = word_tokenize(normalized_txt)
 
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
+    #lemmatize
+    words = [WordNetLemmatizer().lemmatize(w) for w in words]
+    
+    #Reduce words to their stems
+    clean_tokens = [PorterStemmer().stem(w) for w in words]
+    
     return clean_tokens
 
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///../data/disaster_messages.db')
+df = pd.read_sql_table('messages', engine)
 
 # load model
 model = joblib.load("../models/your_model_name.pkl")
