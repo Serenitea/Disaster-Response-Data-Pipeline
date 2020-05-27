@@ -47,7 +47,13 @@ model = joblib.load("../models/model_3.pkl")
 #colors = ["#4CB391", "azure"]
 #colors = px.colors.sequential.Plasma
 #colors = ['#a3a7e4'] * 100
+#colors = (px.colors.cyclical.IceFire)*100
 colors = px.colors.cyclical.IceFire
+
+cm1 = [[0, 'rgb(77,162,132)'], [0.6, 'rgb(18,63,90)'], [1, 'rgb(3,35,60)']]
+#cm1 = [[0, 'rgb(120,198,132)'], [1, 'rgb(18,63,90)']]
+
+
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
@@ -61,61 +67,11 @@ def index():
     cat_count = (df.iloc[:, 4:] != 0).sum()
     cat_names = list(cat_count.index)
     
-    
-    graphs = [
-        {
-            'data': [
-                bar(
-                    x=genre_names,
-                    y=genre_counts,
-                    color=genre_counts
-                    
-                )
-            ],
-
-            'layout': {
-                'title': 'Distribution of Message Genres',
-                'yaxis': {
-                    'title': "Count"
-                },
-                'xaxis': {
-                    'title': "Genre"
-                }
-            }
-        },
-        
-    #top 5 most popular categories
-        {
-            'data': [
-                bar(
-                    x=cat_names,
-                    y=cat_count,
-                    color=cat_count, color_continuous_scale=px.colors.diverging.Tealrose, color_continuous_midpoint=2
-                )
-            ],
-
-            'layout': {
-                'title': 'Counts of All Message Categories',
-                'yaxis': {
-                    'title': "Count"
-                },
-                'xaxis': {
-                    'title': "Categories"
-                }
-            }
-        }
-
-        
-    ]
-
-    
     #corr_list = []
     #for row in data.corr().values:
     #    corr_list.append(list(row))
     
-    # create visuals
-    #strength
-    
+
     #Default graph: genre distribution graph
 
     graphs = [
@@ -124,13 +80,16 @@ def index():
                 Bar(
                     x=genre_names,
                     y=genre_counts,
-                    marker = dict(color=color)
-                    
+                    #marker = dict(color=colors, autocolorscale=True)
+                    #marker = dict(color=colors, colorscale ='tealgrn')
+                    #marker = dict(color=[[0, 'rgb(0,0,255)'], [13500, 'rgb(255,0,0)']], colorscale ='tealgrn')
+                    marker = dict(color = genre_counts,
+                          colorscale =cm1)
                 )
             ],
 
             'layout': {
-                'title': 'Distribution of Message Genres',
+                'title': 'Distribution of Message Categories',
                 'yaxis': {
                     'title': "Count"
                 },
@@ -146,7 +105,9 @@ def index():
                 Bar(
                     x=cat_names,
                     y=cat_count,
-                    marker = dict(color=color)
+                    marker = dict(color = cat_count,
+                          colorscale = cm1)
+                    #was using colorscale = 'Blugrn' but the light end is too light
                 )
             ],
 
@@ -163,14 +124,13 @@ def index():
 
         
     ]
-    '''
+
 
     #assign unique id to each graph
     ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
 
-    graphJSON = BaseFigure.write_json('graph-1')
     # encode plotly graphs in JSON
-    #graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
+    graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
 
     # render web page with plotly graphs
     return render_template('master.html', ids=ids, graphJSON=graphJSON)

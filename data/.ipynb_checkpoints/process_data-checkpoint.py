@@ -24,7 +24,7 @@ def clean_data(df):
         - category values encoded as boolean integers with one category per column
         - duplicates removed
     '''
-    split_cat = df.split_cat.str.split(';', expand = True)
+    split_cat = df.categories.str.split(';', expand = True)
     row = split_cat.iloc[0]
     category_colnames = [x[:-2] for x in row]
     split_cat.columns = category_colnames
@@ -39,19 +39,18 @@ def clean_data(df):
     split_cat = split_cat.drop('child_alone', axis = 1)
     
     # concatenate the original dataframe with the new `categories` dataframe
-    df_split = pd.concat([df, split_cat], axis = 1)
+    df_merged = pd.concat([df, split_cat], axis = 1)
 
     # drop the original categories column from `df`
-    df_split = df_split.drop(['categories'], axis = 1)
-    display(df_split)
+    df_merged = df_merged.drop(['categories'], axis = 1)
 
     #drop duplicates
-    df_split = df_split.drop_duplicates()
+    df_merged = df_merged.drop_duplicates()
     
     # Remove rows with a related value of 2 from the dataset
-    df_split = df_split[df_split['related'] != 2]
+    df_merged = df_merged[df_merged['related'] != 2]
     
-    return df_split
+    return df_merged
 
     
 def save_data(df, database_filename):
@@ -64,7 +63,7 @@ def save_data(df, database_filename):
         No display
     '''
     engine = create_engine('sqlite:///disaster_response.db')
-    df.to_sql('message_categories', engine, index=False)
+    df.to_sql('message_categories', engine, index=False, if_exists='replace')
 
 
 def main():

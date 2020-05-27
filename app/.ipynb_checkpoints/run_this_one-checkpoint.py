@@ -50,7 +50,7 @@ model = joblib.load("../models/model_3.pkl")
 #colors = (px.colors.cyclical.IceFire)*100
 colors = px.colors.cyclical.IceFire
 
-cm1 = [[0, 'rgb(77,162,132)'], [1, 'rgb(18,63,90)']]
+cm1 = [[0, 'rgb(77,162,132)'], [0.6, 'rgb(18,63,90)'], [1, 'rgb(3,35,60)']]
 #cm1 = [[0, 'rgb(120,198,132)'], [1, 'rgb(18,63,90)']]
 
 
@@ -89,7 +89,7 @@ def index():
             ],
 
             'layout': {
-                'title': 'Distribution of Message Genres',
+                'title': 'Distribution of Message Categories',
                 'yaxis': {
                     'title': "Count"
                 },
