@@ -6,17 +6,14 @@ from sqlalchemy import create_engine
 import sys
 
 #machine learning
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.ensemble import RandomForestClassifier,AdaBoostClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.multioutput import MultiOutputClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, make_scorer, classification_report, fbeta_score
 from sklearn.model_selection import GridSearchCV
-from sklearn.svm import SVC
-from sklearn.metrics import classification_report, accuracy_score
-from scipy.stats.mstats import gmean
+from sklearn.metrics import classification_report
 
 #NLP
 import re
@@ -30,7 +27,7 @@ from nltk.stem.porter import PorterStemmer
 def load_data(database_filepath):
     '''
     load data from database
-    my db filepath: 'sqlite:///disaster_response.db'
+    my db filepath: 'sqlite:///../data/disaster_response.db'
     '''
     engine = create_engine(database_filepath)
     df = pd.read_sql_table(table_name='message_categories', con=engine)
@@ -59,7 +56,7 @@ def tokenize(text):
     return words
 
 
-def build_model(X, Y):
+def build_model():
     '''
     Builds and fits a pipeline model given X and Y.
     '''
@@ -75,7 +72,6 @@ def build_model(X, Y):
         ('clf', MultiOutputClassifier(AdaBoostClassifier()))
     ])
     
-    model.fit(X_train, Y_train)
     return model
 
 
@@ -105,9 +101,9 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
     df_wavg = pd.DataFrame(weighted_avg).transpose() #create df from weighted avg dict
     
-    display(df['f1-score'].describe()) # descriptive stats for f1-scores
-    display('lowest quantile of f scores',df[df['f1-score'] <= df['f1-score'].quantile(0.25)]) # lowest quantile of f scores
-    display('highest quantile of f scores', df[df['f1-score'] >= df['f1-score'].quantile(0.75)]) # highest quantile of f scores
+    print(df_wavg['f1-score'].describe()) # descriptive stats for f1-scores
+    print('lowest quantile of f scores',df_wavg[df_wavg['f1-score'] <= df_wavg['f1-score'].quantile(0.25)]) # lowest quantile of f scores
+    print('highest quantile of f scores', df_wavg[df_wavg['f1-score'] >= df_wavg['f1-score'].quantile(0.75)]) # highest quantile of f scores
     return df_wavg
 
 
@@ -116,7 +112,7 @@ def save_model(model_name, model_filepath):
     Saves a file to the data folder with the extension .pkl
     file path: '../data/'+ file_name+'.pkl'
     '''
-    pickle.dump(file_to_pickle, open('../data/'+model_name+'.pkl', 'wb'))
+    pickle.dump(model_name, open('../data/'+model_filepath+'.pkl', 'wb'))
 
 
 def main():
