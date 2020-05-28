@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sqlalchemy import create_engine
 import sys
+import json
+import ast
 
 #machine learning
 from sklearn.pipeline import Pipeline, FeatureUnion
@@ -34,7 +36,7 @@ def load_data(database_filepath):
     X = df['message']
     Y = df.iloc[:,4:]
     category_name = Y.columns.values
-    return X, Y, category_name
+    return X, Y
 
 
 def tokenize(text):
@@ -56,7 +58,7 @@ def tokenize(text):
     return words
 
 
-def build_model():
+def build_model(parameters=None):
     '''
     Builds and fits a pipeline model given X and Y.
     '''
@@ -72,10 +74,23 @@ def build_model():
         ('clf', MultiOutputClassifier(AdaBoostClassifier()))
     ])
     
+    if parameters != None:
+        model_cv = GridSearchCV(estimator=model, scoring='f1_weighted', param_grid=parameters, verbose=3)
+        return model_cv
+
+    else:
+        return model
+
+def train_model(model, X_train, Y_train):
+    '''
+    Train model based on whether or not GridSearchCV parameters were given.
+    '''
+    model.fit(X_train, Y_train)
     return model
 
 
-def evaluate_model(model, X_test, Y_test, category_names):
+
+def evaluate_model(model, X_test, Y_test):
     '''
     Create a weighted averages summary dataframe for each label, 
     using the classification_report function 
@@ -115,33 +130,63 @@ def save_model(model_name, model_filepath):
     pickle.dump(model_name, open('../data/'+model_filepath+'.pkl', 'wb'))
 
 
-def main():
-    if len(sys.argv) == 3:
-        database_filepath, model_filepath = sys.argv[1:]
-        print('Loading data...\n    DATABASE: {}'.format(database_filepath))
-        X, Y, category_names = load_data(database_filepath)
-        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
+def main(database_filepath, model_filepath, params):
+    '''
+    Load saved database, train a pipeline model, print evaluation metrics, and save trained model the data folder.
+    '''
+    print('Loading data...\n    DATABASE: {}'.format(database_filepath))
+    X, Y = load_data(database_filepath)
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
 
-        print('Building model...')
-        model = build_model()
+    print('Building model...')
+    model = build_model(params)
 
-        print('Training model...')
-        model.fit(X_train, Y_train)
+    print('Training model...')
+    trained_model = train_model(model, X_train, Y_train)
 
-        print('Evaluating model...')
-        evaluate_model(model, X_test, Y_test, category_names)
+    print('Evaluating model...')
+    evaluate_model(trained_model, X_test, Y_test)
 
-        print('Saving model...\n    MODEL: {}'.format(model_filepath))
-        save_model(model, model_filepath)
+    print('Saving model...\n    MODEL: {}'.format(model_filepath))
+    save_model(trained_model, model_filepath)
 
-        print('Trained model saved!')
-
-    else:
-        print('Please provide the filepath of the disaster messages database '\
-              'as the first argument and the filepath of the pickle file to '\
-              'save the model to as the second argument. \n\nExample: python '\
-              'train_classifier.py ../data/DisasterResponse.db classifier.pkl')
+    print('Trained model saved!')
 
 
 if __name__ == '__main__':
-    main()
+    # Create argparser
+    import argparse
+    parser = argparse.ArgumentParser(description = 'Script for training classifier pipeline'\
+                                     'Please provide the filepath of the disaster messages database '\
+              'as the first argument and the filepath of the pickle file to '\
+              'save the model to as the second argument. \n\nExample: python '\
+              'train_classifier.py ../data/DisasterResponse.db classifier'\
+              'the saved file path will be ../data/+file_name+.pkl')
+    parser.add_argument("database_filepath", help = "File path for database, ../data/DisasterResponse.db")
+    parser.add_argument("model_filepath", help = "File name for saving trained model, with saved file path to be ../data/+file_name+.pkl")
+    parser.add_argument('-p', '--params_dict', help='Dictionary of model parameters. Dictionary should be\
+                          passed in string form with values in a list, e.g. \
+                          "{key: [value(s)]}". \ 
+                          For windows, format as '{\"name\":key}'\
+                          To see available params, use \
+                          train_classifer.py database/filepath model/filepath\
+                          -p', 
+                            type=json.loads)
+    parser.add_argument('-a', '--available_params', action='store_true', help='lists all model parameter keys')
+    args = parser.parse_args()
+    
+    if args.available_params:
+        pipeline = Pipeline([
+        ('features', FeatureUnion([
+            ('text_pipeline', Pipeline([
+                ('vect', CountVectorizer(tokenizer=tokenize)),
+                ('tfidf', TfidfTransformer())
+            ])),
+        ])),
+
+        ('clf', MultiOutputClassifier(AdaBoostClassifier()))
+    ])
+        print(pipeline.get_params().keys())
+    else:
+        main(database_filepath=args.database_filepath, 
+             model_filepath=args.model_filepath, params=args.params_dict)
