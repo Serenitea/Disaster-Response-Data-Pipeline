@@ -1,12 +1,12 @@
 
-### Table of Contents
+### Table of Contents for Disaster Response Pipeline Project
 
 1. [Run Instructions](#instructions)
 2. [Project Motivation](#motivation)
 3. [File Descriptions](#files)
 4. [Project Pipeline](#pipeline)
 5. [Results](#Results)
-6. [Licensing, Authors, and Acknowledgements](#licensing)# Disaster Response Pipeline Project
+6. [Licensing, Authors, and Acknowledgements](#licensing)
 
 ##Run Instructions<a name="instructions"></a>
 1. Run the following commands in the project's root directory to set up your database and model.
